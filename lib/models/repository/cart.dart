@@ -93,8 +93,8 @@ class Cart extends ChangeNotifier {
   }
 
   /// Add [product] to the cart.
-  void add(Product product) {
-    final p = CartProduct(product, isSelected: true);
+  void add(Product product, {num? variantPrice}) {
+    final p = CartProduct(product, isSelected: true, singlePrice: variantPrice ?? product.price);
     products.add(p);
 
     toggleAll(false, except: p);

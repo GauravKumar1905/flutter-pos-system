@@ -12,6 +12,7 @@ import 'package:possystem/constants/constant.dart';
 import 'package:possystem/constants/icons.dart';
 import 'package:possystem/helpers/breakpoint.dart';
 import 'package:possystem/models/menu/product.dart';
+import 'package:possystem/models/menu/product_variant.dart';
 import 'package:possystem/models/repository/quantities.dart';
 import 'package:possystem/models/repository/stock.dart';
 import 'package:possystem/routes.dart';
@@ -53,6 +54,7 @@ class _ProductPageState extends State<ProductPage> {
                 child: _buildMetadata(),
               ),
             ),
+            SliverToBoxAdapter(child: _buildVariantsSection()),
             SliverToBoxAdapter(child: _buildIngredientTitle()),
             if (items.isNotEmpty)
               SliverPadding(
@@ -99,6 +101,7 @@ class _ProductPageState extends State<ProductPage> {
         child: Column(
           children: [
             metadataTile,
+            _buildVariantsSection(),
             _buildIngredientTitle(),
             if (widget.product.isNotEmpty) _buildAddButton(),
             if (widget.product.isNotEmpty)
@@ -125,6 +128,104 @@ class _ProductPageState extends State<ProductPage> {
       S.menuProductMetaPrice(widget.product.price),
       S.menuProductMetaCost(widget.product.cost),
     ])!;
+  }
+
+
+  Widget _buildVariantsSection() {
+    final product = widget.product;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Size Variants (Half/Full Plate)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              TextButton.icon(
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add'),
+                onPressed: () => _showAddVariantDialog(),
+              ),
+            ],
+          ),
+          if (product.variants.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Text('No variants. Product uses its base price.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+            )
+          else
+            ...product.variants.asMap().entries.map((entry) => ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(entry.value.name),
+              subtitle: Text('Price: \${entry.value.price.toStringAsFixed(0)}'),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                onPressed: () => _removeVariant(entry.key),
+              ),
+            )),
+          const Divider(),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAddVariantDialog() async {
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Size Variant'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Name (e.g. Half Plate)'),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: priceController,
+              decoration: const InputDecoration(labelText: 'Price'),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              final price = num.tryParse(priceController.text.trim());
+              if (name.isNotEmpty && price != null) {
+                _addVariant(ProductVariant(name: name, price: price));
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addVariant(ProductVariant variant) async {
+    final product = widget.product;
+    final newVariants = [...product.variants, variant];
+    product.variants = newVariants;
+    await product.save();
+    setState(() {});
+  }
+
+  Future<void> _removeVariant(int index) async {
+    final product = widget.product;
+    final newVariants = [...product.variants]..removeAt(index);
+    product.variants = newVariants;
+    await product.save();
+    setState(() {});
   }
 
   Widget _buildIngredientTitle() {

@@ -6,6 +6,7 @@ import '../objects/menu_object.dart';
 import '../repository.dart';
 import '../repository/menu.dart';
 import 'catalog.dart';
+import 'product_variant.dart';
 import 'product_ingredient.dart';
 
 class Product extends Model<ProductObject>
@@ -26,6 +27,9 @@ class Product extends Model<ProductObject>
   /// Money show to customer/order
   num price;
 
+  /// Optional size/price variants (e.g. Half Plate, Full Plate)
+  List<ProductVariant> variants;
+
   /// The time added to catalog
   final DateTime createdAt;
 
@@ -45,6 +49,7 @@ class Product extends Model<ProductObject>
     int index = 1,
     this.cost = 0,
     this.price = 0,
+    List<ProductVariant>? variants,
     String? imagePath,
     DateTime? createdAt,
     this.searchedAt,
@@ -52,6 +57,7 @@ class Product extends Model<ProductObject>
   }) : createdAt = createdAt ?? .now() {
     this.index = index;
     this.imagePath = imagePath;
+    this.variants = variants ?? [];
 
     if (ingredients != null) replaceItems(ingredients);
   }
@@ -82,6 +88,7 @@ class Product extends Model<ProductObject>
       createdAt: object.createdAt,
       searchedAt: object.searchedAt,
       ingredients: {for (var ingredient in ingredients) ingredient!.id: ingredient},
+      variants: object.variants,
     )..prepareItem();
   }
 

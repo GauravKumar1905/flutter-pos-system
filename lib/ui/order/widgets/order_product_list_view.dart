@@ -7,6 +7,7 @@ import 'package:possystem/models/menu/product.dart';
 import 'package:possystem/models/repository/cart.dart';
 import 'package:possystem/translator.dart';
 import 'package:possystem/ui/order/order_page.dart';
+import 'package:possystem/ui/order/widgets/product_variant_picker.dart';
 
 class OrderProductListView extends StatelessWidget {
   final List<Product> products;
@@ -17,6 +18,7 @@ class OrderProductListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _context = context;
     return Padding(
       padding: const .only(top: kTopSpacing, bottom: kFABSpacing),
       child: _buildView(context),
@@ -74,6 +76,12 @@ class OrderProductListView extends StatelessWidget {
   }
 
   void _onSelected(Product product) {
-    Cart.instance.add(product);
+    if (product.variants.isNotEmpty) {
+      showVariantPicker(_context!, product);
+    } else {
+      Cart.instance.add(product);
+    }
   }
+
+  BuildContext? _context;
 }

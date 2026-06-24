@@ -4,6 +4,7 @@ import '../menu/catalog.dart';
 import '../menu/product.dart';
 import '../menu/product_ingredient.dart';
 import '../menu/product_quantity.dart';
+import '../menu/product_variant.dart';
 import '../model_object.dart';
 import '../repository/quantities.dart';
 import '../repository/stock.dart';
@@ -152,6 +153,7 @@ class ProductObject extends ModelObject<Product> {
   final DateTime? createdAt;
   final DateTime? searchedAt;
   final List<ProductIngredientObject> ingredients;
+  final List<ProductVariant> variants;
 
   ProductObject({
     this.id,
@@ -163,7 +165,9 @@ class ProductObject extends ModelObject<Product> {
     this.createdAt,
     this.searchedAt,
     List<ProductIngredientObject>? ingredients,
-  }) : ingredients = ingredients ?? const [];
+    List<ProductVariant>? variants,
+  }) : ingredients = ingredients ?? const [],
+       variants = variants ?? const [];
 
   factory ProductObject.build(Map<String, Object?> data) {
     final ingredients = (data['ingredients'] ?? <String, Object?>{}) as Map<String, Object?>;
@@ -182,6 +186,9 @@ class ProductObject extends ModelObject<Product> {
           .map<ProductIngredientObject>(
             (e) => ProductIngredientObject.build({'id': e.key, ...e.value as Map<String, Object?>}),
           )
+          .toList(),
+      variants: ((data['variants'] as List<dynamic>?) ?? [])
+          .map((e) => ProductVariant.fromMap(e as Map<String, Object?>))
           .toList(),
     );
   }
@@ -224,6 +231,7 @@ class ProductObject extends ModelObject<Product> {
       'createdAt': Util.toUTC(now: createdAt),
       if (searchedAt != null) 'searchedAt': Util.toUTC(now: searchedAt),
       'ingredients': {for (var ingredient in ingredients) ingredient.id: ingredient.toMap()},
+      if (variants.isNotEmpty) 'variants': variants.map((v) => v.toMap()).toList(),
     };
   }
 }
