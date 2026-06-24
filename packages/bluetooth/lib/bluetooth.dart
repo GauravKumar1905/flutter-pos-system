@@ -17,7 +17,17 @@ class Logger {
 
 // ─── Exceptions ──────────────────────────────────────────────────────────────
 
-enum BluetoothExceptionCode { unknown, timeout, deviceNotFound }
+enum BluetoothExceptionCode {
+  unknown,
+  timeout,
+  deviceNotFound,
+  adapterIsOff,
+  characteristicNotFound,
+  connectionCanceled,
+  deviceIsDisconnected,
+  serviceNotFound,
+  userRejected,
+}
 enum BluetoothExceptionFrom { scan, connect, disconnect, draw }
 
 class BluetoothException implements Exception {
@@ -44,16 +54,29 @@ class BluetoothDevice {
 
 // ─── Signal / Status ─────────────────────────────────────────────────────────
 
-enum BluetoothSignal { strong, medium, weak, none }
+enum BluetoothSignal { weak, normal, good }
 
-enum PrinterStatus { connected, connecting, disconnected, error }
+enum PrinterStatus {
+  good,
+  printing,
+  unknown,
+  unrecoverable,
+  writeFailed,
+  paperJams,
+  paperNotFound,
+  lowBattery,
+  tooHot,
+  uncovering,
+  noResponse,
+}
 
-enum PrinterDensity { light, normal, dark }
+enum PrinterDensity { normal, tight }
 
 // ─── Bluetooth manager ───────────────────────────────────────────────────────
 
 class Bluetooth {
   static final Bluetooth i = Bluetooth._();
+  static Bluetooth get instance => i;
   Bluetooth._();
 
   bool _scanning = false;
@@ -121,24 +144,24 @@ class Printer extends ChangeNotifier {
   final String address;
   final PrinterManufactory manufactory;
 
-  PrinterStatus _status = PrinterStatus.disconnected;
+  PrinterStatus _status = PrinterStatus.unknown;
 
   Printer({required this.address, required this.manufactory, Printer? other});
 
-  bool get connected => _status == PrinterStatus.connected;
+  bool get connected => _status == PrinterStatus.good;
 
   PrinterStatus get status => _status;
 
   Future<bool> connect() async {
-    _status = PrinterStatus.connecting;
+    _status = PrinterStatus.printing;
     notifyListeners();
     try {
       final ok = await PrintBluetoothThermal.connect(macPrinterAddress: address);
-      _status = ok ? PrinterStatus.connected : PrinterStatus.error;
+      _status = ok ? PrinterStatus.good : PrinterStatus.noResponse;
       notifyListeners();
       return ok;
     } catch (e) {
-      _status = PrinterStatus.error;
+      _status = PrinterStatus.noResponse;
       notifyListeners();
       return false;
     }
@@ -146,7 +169,7 @@ class Printer extends ChangeNotifier {
 
   Future<void> disconnect() async {
     await PrintBluetoothThermal.disconnect;
-    _status = PrinterStatus.disconnected;
+    _status = PrinterStatus.unknown;
     notifyListeners();
   }
 
