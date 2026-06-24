@@ -32,9 +32,7 @@ dependencies:
   shared_preferences: ^2.5.3
   http: ^1.5.0
   packages:
-    git:
-      url: https://github.com/evan361425/flutter-pos-packages
-      ref: 2026.05.03-04
+    path: packages/bluetooth
 
   # google services
   googleapis: ^14.0.0
@@ -67,10 +65,7 @@ dependencies:
   package_info_plus: ^8.3.0  # 25, 02-25
   visibility_detector: ^0.4.0+2  # 23, 03-09
   cupertino_icons: ^1.0.8  # This is for google-package which use it in some case
-  excel:
-    git:
-      url: https://github.com/evan361425/excel
-      ref: patch-1
+  excel: ^4.0.6
 
 dev_dependencies:
   flutter_test:

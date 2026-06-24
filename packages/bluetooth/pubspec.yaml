@@ -1,0 +1,13 @@
+name: packages
+description: Local Bluetooth thermal printer package replacing private flutter-pos-packages
+version: 1.0.0
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.41.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  print_bluetooth_thermal: ^1.0.6
+  collection: ^1.18.0
