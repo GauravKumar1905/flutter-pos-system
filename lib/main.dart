@@ -31,6 +31,7 @@ void main() async {
   // Firebase removed — running fully offline/local
   Log.out('start (offline mode, no Firebase)', 'init');
 
+  try {
   await Database.instance.initialize(logWhenQuery: isLocalTest);
   await Storage.instance.initialize();
   await Cache.instance.initialize();
@@ -46,6 +47,31 @@ void main() async {
   await Analysis().initialize();
   await Printers().initialize();
   await Menu().initialize();
+
+  } catch (e, stack) {
+    FlutterNativeSplash.remove();
+    runApp(MaterialApp(
+      home: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Startup Error', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red)),
+                const SizedBox(height: 16),
+                Text(e.toString(), style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 16),
+                Text(stack.toString(), style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ));
+    return;
+  }
 
   runApp(
     MultiProvider(
