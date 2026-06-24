@@ -28,7 +28,7 @@ class Product extends Model<ProductObject>
   num price;
 
   /// Optional size/price variants (e.g. Half Plate, Full Plate)
-  List<ProductVariant> variants;
+  late List<ProductVariant> variants;
 
   /// The time added to catalog
   final DateTime createdAt;

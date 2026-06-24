@@ -65,7 +65,7 @@ dependencies:
   package_info_plus: ^8.3.0  # 25, 02-25
   visibility_detector: ^0.4.0+2  # 23, 03-09
   cupertino_icons: ^1.0.8  # This is for google-package which use it in some case
-  excel: ^4.0.6
+  excel: ^3.0.0
 
 dev_dependencies:
   flutter_test:

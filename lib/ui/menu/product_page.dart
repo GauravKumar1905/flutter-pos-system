@@ -214,17 +214,15 @@ class _ProductPageState extends State<ProductPage> {
 
   Future<void> _addVariant(ProductVariant variant) async {
     final product = widget.product;
-    final newVariants = [...product.variants, variant];
-    product.variants = newVariants;
-    await product.save();
+    product.variants = [...product.variants, variant];
+    await product.save({'\${product.prefix}.variants': product.variants.map((v) => v.toMap()).toList()});
     setState(() {});
   }
 
   Future<void> _removeVariant(int index) async {
     final product = widget.product;
-    final newVariants = [...product.variants]..removeAt(index);
-    product.variants = newVariants;
-    await product.save();
+    product.variants = [...product.variants]..removeAt(index);
+    await product.save({'\${product.prefix}.variants': product.variants.map((v) => v.toMap()).toList()});
     setState(() {});
   }
 

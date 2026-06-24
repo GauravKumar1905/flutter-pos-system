@@ -7,7 +7,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 
-// ─── Logging ────────────────────────────────────────────────────────────────
+// ─── Logging ─────────────────────────────────────────────────────────────────
 
 enum LogLevel { debug, info, warn, error }
 
@@ -15,7 +15,7 @@ class Logger {
   static LogLevel level = LogLevel.info;
 }
 
-// ─── Exceptions ──────────────────────────────────────────────────────────────
+// ─── Exception codes / from ──────────────────────────────────────────────────
 
 enum BluetoothExceptionCode {
   unknown,
@@ -28,31 +28,36 @@ enum BluetoothExceptionCode {
   serviceNotFound,
   userRejected,
 }
+
 enum BluetoothExceptionFrom { scan, connect, disconnect, draw }
 
+// ─── Exceptions ──────────────────────────────────────────────────────────────
+
 class BluetoothException implements Exception {
-  final BluetoothExceptionCode code;
-  final BluetoothExceptionFrom from;
-  final String message;
-  BluetoothException({required this.code, required this.from, this.message = ''});
+  /// Matches BluetoothExceptionCode.xxx.index for UI comparisons
+  final int code;
+  final String? description;
+  final String? function;
+
+  BluetoothException({
+    required this.code,
+    this.description,
+    this.function,
+  });
+
   @override
-  String toString() => 'BluetoothException($code, $from): $message';
+  String toString() => 'BluetoothException($code): ${description ?? function ?? "unknown"}';
 }
 
 class BluetoothOffException extends BluetoothException {
   BluetoothOffException()
-      : super(code: BluetoothExceptionCode.unknown, from: BluetoothExceptionFrom.connect, message: 'Bluetooth is off');
+      : super(
+          code: BluetoothExceptionCode.adapterIsOff.index,
+          description: 'Bluetooth adapter is off',
+        );
 }
 
-// ─── Device ──────────────────────────────────────────────────────────────────
-
-class BluetoothDevice {
-  final String name;
-  final String address;
-  BluetoothDevice({required this.name, required this.address});
-}
-
-// ─── Signal / Status ─────────────────────────────────────────────────────────
+// ─── Signals / Status / Density ──────────────────────────────────────────────
 
 enum BluetoothSignal { weak, normal, good }
 
@@ -67,12 +72,61 @@ enum PrinterStatus {
   lowBattery,
   tooHot,
   uncovering,
-  noResponse,
+  noResponse;
+
+  /// 0 = all good, 1+ = needs attention.
+  /// Used by UI to decide which icon to show.
+  int get priority {
+    switch (this) {
+      case PrinterStatus.good:
+      case PrinterStatus.printing:
+      case PrinterStatus.unknown:
+        return 0;
+      case PrinterStatus.lowBattery:
+      case PrinterStatus.tooHot:
+      case PrinterStatus.uncovering:
+      case PrinterStatus.noResponse:
+        return 1;
+      case PrinterStatus.unrecoverable:
+      case PrinterStatus.writeFailed:
+      case PrinterStatus.paperJams:
+      case PrinterStatus.paperNotFound:
+        return 2;
+    }
+  }
 }
 
 enum PrinterDensity { normal, tight }
 
-// ─── Bluetooth manager ───────────────────────────────────────────────────────
+// ─── Bluetooth Device ─────────────────────────────────────────────────────────
+
+class BluetoothDevice {
+  final String name;
+  final String address;
+  bool connected;
+
+  BluetoothDevice({
+    required this.name,
+    required this.address,
+    this.connected = false,
+  });
+
+  /// Demo device used in printer modal when no real devices scanned yet.
+  factory BluetoothDevice.demo() => BluetoothDevice(
+        name: 'Demo Printer',
+        address: '00:00:00:00:00:00',
+      );
+
+  /// Periodically emits signal strength (simulated for now).
+  Stream<BluetoothSignal> createSignalStream() async* {
+    while (true) {
+      await Future.delayed(const Duration(seconds: 5));
+      yield BluetoothSignal.good;
+    }
+  }
+}
+
+// ─── Bluetooth scanner ───────────────────────────────────────────────────────
 
 class Bluetooth {
   static final Bluetooth i = Bluetooth._();
@@ -83,11 +137,16 @@ class Bluetooth {
 
   Stream<List<BluetoothDevice>> startScan() async* {
     _scanning = true;
-    final available = await PrintBluetoothThermal.pairedBluetooths;
-    if (!_scanning) return;
-    yield available
-        .map((b) => BluetoothDevice(name: b.name ?? 'Unknown', address: b.macAdress))
-        .toList();
+    try {
+      final paired = await PrintBluetoothThermal.pairedBluetooths;
+      if (_scanning) {
+        yield paired
+            .map((b) => BluetoothDevice(name: b.name ?? 'Unknown', address: b.macAdress))
+            .toList();
+      }
+    } catch (_) {
+      yield [];
+    }
   }
 
   Future<void> stopScan() async {
@@ -98,21 +157,22 @@ class Bluetooth {
 // ─── PrinterManufactory ──────────────────────────────────────────────────────
 
 abstract class PrinterManufactory {
+  const PrinterManufactory();
   int get widthBits;
   int get widthMM;
 
   static PrinterManufactory? tryGuess(String name) {
     final n = name.toLowerCase();
-    if (n.contains('cat')) return CatPrinter();
-    if (n.contains('xprinter') || n.contains('xp-58')) return XPrinter();
-    if (n.contains('yokoscan')) return YokoscanPrinter();
+    if (n.contains('cat')) return const CatPrinter();
+    if (n.contains('xprinter') || n.contains('xp-')) return const XPrinter();
+    if (n.contains('yokoscan')) return const YokoscanPrinter();
     return null;
   }
 }
 
 class CatPrinter extends PrinterManufactory {
   final int feedPaperByteSize;
-  CatPrinter({this.feedPaperByteSize = 1});
+  const CatPrinter({this.feedPaperByteSize = 1});
   @override int get widthBits => 384;
   @override int get widthMM => 58;
   @override String toString() => 'CatPrinter';
@@ -121,18 +181,19 @@ class CatPrinter extends PrinterManufactory {
 class XPrinter extends PrinterManufactory {
   @override final int widthMM;
   @override final int widthBits;
-  XPrinter({this.widthMM = 58, this.widthBits = 384});
+  const XPrinter({this.widthMM = 58, this.widthBits = 384});
   @override String toString() => 'XPrinter';
 }
 
 class YokoscanPrinter extends PrinterManufactory {
   @override final int widthMM;
   @override final int widthBits;
-  YokoscanPrinter({this.widthMM = 58, this.widthBits = 384});
+  const YokoscanPrinter({this.widthMM = 58, this.widthBits = 384});
   @override String toString() => 'YokoscanPrinter';
 }
 
 class EpsonPrinter extends PrinterManufactory {
+  const EpsonPrinter();
   @override int get widthBits => 576;
   @override int get widthMM => 80;
   @override String toString() => 'EpsonPrinter';
@@ -145,6 +206,8 @@ class Printer extends ChangeNotifier {
   final PrinterManufactory manufactory;
 
   PrinterStatus _status = PrinterStatus.unknown;
+  BluetoothDevice? _device;
+  final _statusController = StreamController<PrinterStatus>.broadcast();
 
   Printer({required this.address, required this.manufactory, Printer? other});
 
@@ -152,37 +215,63 @@ class Printer extends ChangeNotifier {
 
   PrinterStatus get status => _status;
 
-  Future<bool> connect() async {
-    _status = PrinterStatus.printing;
+  /// The connected BluetoothDevice (available after connect()).
+  BluetoothDevice? get device => _device;
+
+  /// Stream of printer status changes.
+  Stream<PrinterStatus> get statusStream => _statusController.stream;
+
+  void _setStatus(PrinterStatus s) {
+    _status = s;
+    _statusController.add(s);
     notifyListeners();
+  }
+
+  Future<bool> connect() async {
+    _setStatus(PrinterStatus.printing); // "connecting" state
     try {
       final ok = await PrintBluetoothThermal.connect(macPrinterAddress: address);
-      _status = ok ? PrinterStatus.good : PrinterStatus.noResponse;
-      notifyListeners();
+      if (ok) {
+        _device = BluetoothDevice(name: 'Printer', address: address, connected: true);
+        _setStatus(PrinterStatus.good);
+      } else {
+        _device = null;
+        _setStatus(PrinterStatus.noResponse);
+      }
       return ok;
     } catch (e) {
-      _status = PrinterStatus.noResponse;
-      notifyListeners();
+      _device = null;
+      _setStatus(PrinterStatus.unrecoverable);
       return false;
     }
   }
 
   Future<void> disconnect() async {
-    await PrintBluetoothThermal.disconnect;
-    _status = PrinterStatus.unknown;
-    notifyListeners();
+    try {
+      await PrintBluetoothThermal.disconnect;
+    } catch (_) {}
+    _device = null;
+    _setStatus(PrinterStatus.unknown);
   }
 
-  /// Draw image bytes to printer. Returns progress stream (0.0 → 1.0).
+  /// Sends image bytes to printer. Returns progress 0.0→1.0.
   Stream<double> draw(Uint8List image, {PrinterDensity density = PrinterDensity.normal}) async* {
     yield 0.0;
+    _setStatus(PrinterStatus.printing);
     try {
-      // Send raw bytes directly to the thermal printer
       final ok = await PrintBluetoothThermal.writeBytes(image);
+      _setStatus(ok ? PrinterStatus.good : PrinterStatus.writeFailed);
       yield ok ? 1.0 : 0.0;
     } catch (e) {
+      _setStatus(PrinterStatus.unrecoverable);
       yield 0.0;
       rethrow;
     }
+  }
+
+  @override
+  void dispose() {
+    _statusController.close();
+    super.dispose();
   }
 }
