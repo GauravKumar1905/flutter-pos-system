@@ -1,7 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:possystem/constants/constant.dart';
 
@@ -27,7 +25,7 @@ class Log {
         }
       });
 
-      current = FirebaseAnalytics.instance.logEvent(name: event, parameters: filtered);
+      current = Future.value(); // Firebase removed
     }
   }
 
@@ -39,7 +37,7 @@ class Log {
     out(error.toString(), code, error: error, stackTrace: stackTrace);
 
     if (forceSend || allowSendEvents) {
-      FirebaseCrashlytics.instance.recordError(error, stackTrace, reason: code);
+      // Firebase removed - error: $error
     }
   }
 

@@ -1,4 +1,3 @@
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -41,7 +40,6 @@ class App extends StatelessWidget {
       // onException: (context, state, route) => context.go('/pos'),
       debugLogDiagnostics: kDebugMode,
       observers: [
-        FirebaseAnalyticsObserver(analytics: .instance),
         routeObserver,
       ],
     );
