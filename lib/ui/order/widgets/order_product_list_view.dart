@@ -18,27 +18,26 @@ class OrderProductListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    _context = context;
     return Padding(
       padding: const .only(top: kTopSpacing, bottom: kFABSpacing),
-      child: _buildView(context),
+      child: _buildView(context, context),
     );
   }
 
-  Widget _buildView(BuildContext context) {
+  Widget _buildView(BuildContext context, BuildContext outerContext) {
     if (view == .list) {
-      return _buildListView(context);
+      return _buildListView(outerContext);
     }
 
     return LayoutBuilder(
       builder: (context, constraints) {
         // each width should between 200 and 320
-        return _buildGridView(Breakpoint.find(box: constraints).lookup(compact: 2, medium: 3, expanded: 4, large: 5));
+        return _buildGridView(outerContext, Breakpoint.find(box: constraints).lookup(compact: 2, medium: 3, expanded: 4, large: 5));
       },
     );
   }
 
-  Widget _buildGridView(int crossAxisCount) {
+  Widget _buildGridView(BuildContext context, int crossAxisCount) {
     return Center(
       child: GridView.count(
         crossAxisCount: crossAxisCount,
@@ -50,7 +49,7 @@ class OrderProductListView extends StatelessWidget {
               key: Key('order.product.${product.id}'),
               image: product.image,
               title: product.name,
-              onPressed: () => _onSelected(product),
+              onPressed: () => _onSelected(context, product),
             ),
         ],
       ),
@@ -69,19 +68,17 @@ class OrderProductListView extends StatelessWidget {
               product.itemList.map((e) => e.name).toList(),
               emptyText: S.orderProductListNoIngredient,
             ),
-            onTap: () => _onSelected(product),
+            onTap: () => _onSelected(context, product),
           ),
       ],
     );
   }
 
-  void _onSelected(Product product) {
+  void _onSelected(BuildContext context, Product product) {
     if (product.variants.isNotEmpty) {
-      showVariantPicker(_context!, product);
+      showVariantPicker(context, product);
     } else {
       Cart.instance.add(product);
     }
   }
-
-  BuildContext? _context;
 }
