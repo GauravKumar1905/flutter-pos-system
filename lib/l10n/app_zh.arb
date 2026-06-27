@@ -1610,6 +1610,7 @@
     }
   },
   "orderCartProductIncrease": "數量加一",
+  "orderCartProductDecrease": "數量減一",
   "orderCartProductDefaultQuantity": "預設份量",
   "orderCartProductIngredient": "{name}（{quantity}）",
   "@orderCartProductIngredient": {

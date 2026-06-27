@@ -96,7 +96,7 @@ class _ProductTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
-      title: Text(data.productName),
+      title: Text(data.displayName),
       subtitle: MetaBlock.withString(context, <String>[
         '${S.orderObjectViewProductPrice}：${data.totalPrice.toCurrency()}',
         '${S.orderObjectViewProductCost}：${data.totalCost.toCurrency()}',

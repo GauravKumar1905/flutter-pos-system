@@ -122,6 +122,17 @@ class _CartProductListTile extends StatelessWidget {
     final trailing = Wrap(
       crossAxisAlignment: .center,
       children: <Widget>[
+        IconButton(
+          key: Key('cart.product.$index.subtract'),
+          icon: const Icon(KIcons.entryRemove),
+          tooltip: S.orderCartProductDecrease,
+          onPressed: product.count > 1
+              ? () {
+                  product.decrement();
+                  Cart.instance.priceChanged();
+                }
+              : null,
+        ),
         Text(product.count.toString(), key: Key('cart.product.$index.count')),
         IconButton(
           key: Key('cart.product.$index.add'),
@@ -146,7 +157,7 @@ class _CartProductListTile extends StatelessWidget {
           child: ListTile(
             key: Key('cart.product.$index'),
             leading: leading,
-            title: Text(product.name, overflow: .ellipsis),
+            title: Text(product.displayName, overflow: .ellipsis),
             subtitle:
                 MetaBlock.withString(context, subtitle, textOverflow: .visible) ??
                 HintText(S.orderCartProductDefaultQuantity),

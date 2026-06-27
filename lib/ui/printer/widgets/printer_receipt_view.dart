@@ -59,7 +59,7 @@ class PrinterReceiptView extends StatelessWidget {
             for (final product in order.products)
               TableRow(
                 children: [
-                  TableCell(child: Text(product.productName)),
+                  TableCell(child: Text(product.displayName)),
                   TableCell(child: Text(product.count.toString(), textAlign: .end)),
                   TableCell(child: Text('\$${product.singlePrice.toCurrency()}', textAlign: .end)),
                   TableCell(child: Text('\$${product.totalPrice.toCurrency()}', textAlign: .end)),
@@ -85,7 +85,7 @@ class PrinterReceiptView extends StatelessWidget {
               TableRow(
                 children: [
                   TableCell(
-                    child: Padding(padding: const .only(left: 8), child: Text(product.productName)),
+                    child: Padding(padding: const .only(left: 8), child: Text(product.displayName)),
                   ),
                   TableCell(
                     child: Text(

@@ -99,6 +99,7 @@ flutter:
   - assets/feature_request_please.gif
   - assets/google_signin_button.svg
   - assets/excel_icon.svg
+  - assets/menu_seed.csv
 
 # flutter pub run flutter_native_splash:create
 flutter_native_splash:

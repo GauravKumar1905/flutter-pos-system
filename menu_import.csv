@@ -1,0 +1,74 @@
+Category Name,Product Name,Product Price,Product Cost,Ingredient & Variant Information
+Chaap Corner,Malai Chaap,170,46,"* Half,170,46\n* Full,250,60"
+Chaap Corner,Masala Chaap,170,46,"* Half,170,46\n* Full,250,60"
+Chaap Corner,Afgani Chaap,170,46,"* Half,170,46\n* Full,250,60"
+Chaap Corner,Achari Chaap,170,46,"* Half,170,46\n* Full,250,60"
+Chaap Corner,Hariyali Chaap,170,46,"* Half,170,46\n* Full,250,60"
+Chaap Corner,Tandoori Chaap,170,46,"* Half,170,46\n* Full,250,60"
+Tandoori Veg Delights,Malai Paneer Tikka,180,54,"* Half,180,54\n* Full,280,76"
+Tandoori Veg Delights,Achari Paneer Tikka,190,57,"* Half,190,57\n* Full,300,81"
+Tandoori Veg Delights,Hariyali Paneer Tikka,190,57,"* Half,190,57\n* Full,300,81"
+Tandoori Veg Delights,Tandoori Paneer Tikka,190,57,"* Half,190,57\n* Full,300,81"
+Tandoori Veg Delights,Malai Mushroom Tikka,180,50,"* Half,180,50\n* Full,280,70"
+Tandoori Veg Delights,Achari Mushroom Tikka,180,50,"* Half,180,50\n* Full,280,70"
+Tandoori Veg Delights,Tandoori Mushroom Tikka,180,50,"* Half,180,50\n* Full,280,70"
+Tandoori Non-Veg Delights,Malai Chicken Tikka,270,95,"* Half,270,95\n* Full,450,144"
+Tandoori Non-Veg Delights,Lemon Chicken Tikka,280,98,"* Half,280,98\n* Full,470,150"
+Tandoori Non-Veg Delights,Achari Chicken Tikka,280,98,"* Half,280,98\n* Full,470,150"
+Tandoori Non-Veg Delights,Hariyali Chicken Tikka,280,98,"* Half,280,98\n* Full,470,150"
+Tandoori Non-Veg Delights,Tandoori Chicken,290,102,"* Half,290,102\n* Full,480,154"
+China Town,Chilli Patato,80,18,"* Half,80,18\n* Full,150,30"
+China Town,Honey Chilli Patato,100,22,"* Half,100,22\n* Full,170,34"
+China Town,Chilli Paneer,180,54,"* Half,180,54\n* Full,300,81"
+China Town,Chilli Mushroom,180,50,"* Half,180,50\n* Full,300,75"
+China Town,Chilli Chicken,220,77,"* Half,220,77\n* Full,320,102"
+Momos World,Veg Momos,100,25,"* Steam,100,25\n* Fried,120,26"
+Momos World,Veg Paneer Momos,150,42,"* Steam,150,42\n* Fried,170,43"
+Eggs Corner,Egg Burji (2 egg),60,20
+Eggs Corner,Egg Omelette (2 egg),60,20
+Eggs Corner,Tandoori Omelette (2 egg),80,25
+Eggs Corner,Boiled Egg,10,6
+Chakna Corner,Peanut Masala,90,20
+Chakna Corner,Sweet Corn,100,25
+Chakna Corner,French Fries,150,45
+Chakna Corner,Peri-peri Fries,180,55
+Chakna Corner,Crispy Corn,170,45
+Healthy Diets,Vegetable Salad,100,25
+Healthy Diets,Paneer & Corn Salad,150,42
+Healthy Diets,Boiled Chicken (150gm),150,50
+Healthy Diets,Roasted Paneer,120,34
+Main Course,Dal Fry/Tadka,140,35,"* Half,140,35\n* Full,280,62"
+Main Course,Sahi Paneer,160,48,"* Half,160,48\n* Full,300,81"
+Main Course,Kadhai Paneer,170,51,"* Half,170,51\n* Full,310,84"
+Main Course,Paneer Bhurji,170,51,"* Half,170,51\n* Full,310,84"
+Main Course,Butter Chicken Masala,410,144,"* Half,410,144\n* Full,780,250"
+Main Course,Kadhai Chicken,410,144,"* Half,410,144\n* Full,780,250"
+Roti,Tandoori Aata Roti,15,4,"* Plain,15,4\n* Butter,20,6"
+Drinks,Limca (250ml),20,17
+Drinks,Mountain Dew (1.25L),50,43
+Drinks,Kinley Soda Strong (750ml),20,17
+Drinks,Packaged Water (1L),15,12
+Drinks,Nimbooz (250ml),20,16
+Drinks,Diet Coke (250ml can),40,34
+Drinks,Thums Up (750ml),40,34
+Drinks,Pepsi Extra Fizz (750ml),40,34
+Drinks,Cream Bell Milkshake (200ml),40,31
+Drinks,Minute Maid Pulpy Orange,40,31
+Cigarettes,Classic Connect,190,175,"* Pack,190,175\n* Stick,20,18"
+Cigarettes,Gold Flake Kings,160,147,"* Pack,160,147\n* Stick,17,15"
+Cigarettes,Gold Flake Indie Mint,150,138,"* Pack,150,138\n* Stick,16,14"
+Cigarettes,Marlboro (Red),300,276,"* Pack,300,276\n* Stick,32,28"
+Cigarettes,Marlboro Advance Compact,250,230,"* Pack,250,230\n* Stick,27,23"
+Chips & Snacks,Snac Lite Wheels,10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Snac Lite Soya Katori,10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Jhal Muri,10,8
+Chips & Snacks,ACT II Popcorn (Butter),10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Yum! Fries (Desi Punch),10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Whoopies Cheese Puffcorn,10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Haldiram's Chips (Aloo Masti),10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Haldiram's Sour Cream & Onion,10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Haldiram's Tangy Tomato Panga,10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Mexilla Nacho Cheese Tortilla,20,16
+Chips & Snacks,Lay's Classic Salted,10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Lay's Magic Masala,10,8,"* Small,10,8\n* Large,20,16"
+Chips & Snacks,Doritos Nacho Cheese,20,16

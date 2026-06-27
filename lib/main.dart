@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 
 import 'app.dart';
 import 'helpers/logger.dart';
+import 'helpers/menu_seeder.dart';
 import 'models/repository/cashier.dart';
 import 'models/repository/menu.dart';
 import 'models/repository/order_attributes.dart';
@@ -47,6 +48,7 @@ void main() async {
   await Analysis().initialize();
   await Printers().initialize();
   await Menu().initialize();
+  await MenuSeeder.seedIfNeeded();
 
   } catch (e, stack) {
     FlutterNativeSplash.remove();

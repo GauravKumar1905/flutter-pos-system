@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:possystem/helpers/util.dart';
 
 import '../menu/catalog.dart';
@@ -153,7 +154,11 @@ class ProductObject extends ModelObject<Product> {
   final DateTime? createdAt;
   final DateTime? searchedAt;
   final List<ProductIngredientObject> ingredients;
-  final List<ProductVariant> variants;
+
+  /// `null` means "not part of this partial update" (see [diff]) — distinct
+  /// from an explicit empty list, which would clear all variants.
+  final List<ProductVariant>? variants;
+  final String? defaultVariantId;
 
   ProductObject({
     this.id,
@@ -165,9 +170,9 @@ class ProductObject extends ModelObject<Product> {
     this.createdAt,
     this.searchedAt,
     List<ProductIngredientObject>? ingredients,
-    List<ProductVariant>? variants,
-  }) : ingredients = ingredients ?? const [],
-       variants = variants ?? const [];
+    this.variants,
+    this.defaultVariantId,
+  }) : ingredients = ingredients ?? const [];
 
   factory ProductObject.build(Map<String, Object?> data) {
     final ingredients = (data['ingredients'] ?? <String, Object?>{}) as Map<String, Object?>;
@@ -190,6 +195,7 @@ class ProductObject extends ModelObject<Product> {
       variants: ((data['variants'] as List<dynamic>?) ?? [])
           .map((e) => ProductVariant.fromMap(e as Map<String, Object?>))
           .toList(),
+      defaultVariantId: data['defaultVariantId'] as String?,
     );
   }
 
@@ -217,6 +223,19 @@ class ProductObject extends ModelObject<Product> {
       model.imagePath = imagePath;
       result['$prefix.imagePath'] = imagePath!;
     }
+
+    final variantsChanged = variants != null && !listEquals(variants, model.variants);
+    final defaultChanged = defaultVariantId != null && defaultVariantId != model.defaultVariantId;
+    if (variantsChanged || defaultChanged) {
+      if (variantsChanged) model.variants = variants!;
+      if (defaultChanged) model.defaultVariantId = defaultVariantId;
+      model.syncDefaultPricing();
+      result['$prefix.variants'] = model.variants.map((v) => v.toMap()).toList();
+      result['$prefix.defaultVariantId'] = model.defaultVariantId ?? '';
+      result['$prefix.price'] = model.price;
+      result['$prefix.cost'] = model.cost;
+    }
+
     return result;
   }
 
@@ -231,7 +250,8 @@ class ProductObject extends ModelObject<Product> {
       'createdAt': Util.toUTC(now: createdAt),
       if (searchedAt != null) 'searchedAt': Util.toUTC(now: searchedAt),
       'ingredients': {for (var ingredient in ingredients) ingredient.id: ingredient.toMap()},
-      if (variants.isNotEmpty) 'variants': variants.map((v) => v.toMap()).toList(),
+      if (variants != null && variants!.isNotEmpty) 'variants': variants!.map((v) => v.toMap()).toList(),
+      if (defaultVariantId != null) 'defaultVariantId': defaultVariantId,
     };
   }
 }

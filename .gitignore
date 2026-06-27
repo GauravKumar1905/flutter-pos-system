@@ -58,6 +58,9 @@ android/build/*
 site/
 Pipfile.lock
 /*.key
+android/key.properties
+android/*.jks
+android/*.keystore
 /lib/firebase_options.dart
 .metadata
 

@@ -75,8 +75,10 @@ class OrderProductListView extends StatelessWidget {
   }
 
   void _onSelected(BuildContext context, Product product) {
-    if (product.variants.isNotEmpty) {
+    if (product.variants.length > 1) {
       showVariantPicker(context, product);
+    } else if (product.variants.length == 1) {
+      Cart.instance.add(product, variant: product.variants.first);
     } else {
       Cart.instance.add(product);
     }

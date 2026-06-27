@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
 import 'package:possystem/helpers/util.dart';
 import 'package:possystem/models/menu/product_ingredient.dart';
@@ -82,6 +83,9 @@ class OrderObject extends _Object {
         product,
         count: object.count,
         singlePrice: object.singlePrice,
+        variant: object.variantId == null
+            ? null
+            : product.variants.firstWhereOrNull((v) => v.id == object.variantId),
         quantities: {
           for (final item in object.ingredients)
             if (item.productQuantityId != null) item.productIngredientId: item.productQuantityId!,
@@ -187,6 +191,13 @@ class OrderProductObject extends _Object {
   /// [Menu] catalog's name
   final String catalogName;
 
+  /// ID of the chosen variant, if any. Only used to recover from stashed
+  /// orders — not persisted to the order history DB.
+  final String? variantId;
+
+  /// Name of the chosen variant, if any (e.g. "Full Plate").
+  final String variantName;
+
   /// Count of products
   final int count;
 
@@ -212,6 +223,8 @@ class OrderProductObject extends _Object {
     this.productId = '',
     this.productName = '',
     this.catalogName = '',
+    this.variantId,
+    this.variantName = '',
     this.count = 0,
     this.singleCost = 0,
     this.singlePrice = 0,
@@ -226,11 +239,15 @@ class OrderProductObject extends _Object {
   /// Total cost of the products, after updated by ingredient.
   num get totalCost => count * singleCost;
 
+  /// Display name combining product and variant, e.g. "Chaap — Full".
+  String get displayName => variantName.isEmpty ? productName : '$productName — $variantName';
+
   @override
   Map<String, Object?> toMap() {
     return {
       'productName': productName,
       'catalogName': catalogName,
+      'variantName': variantName,
       'count': count,
       'singleCost': singleCost,
       'singlePrice': singlePrice,
@@ -243,6 +260,7 @@ class OrderProductObject extends _Object {
   Map<String, Object?> toStashMap() {
     return {
       'productId': productId,
+      'variantId': variantId,
       'count': count,
       'singlePrice': singlePrice,
       'ingredients': ingredients
@@ -263,6 +281,7 @@ class OrderProductObject extends _Object {
       id: id,
       productName: data['productName'] ?? '',
       catalogName: data['catalogName'] ?? '',
+      variantName: data['variantName'] as String? ?? '',
       count: data['count'] as int? ?? 0,
       singleCost: data['singleCost'] as num? ?? 0,
       singlePrice: data['singlePrice'] as num? ?? 0,
@@ -279,6 +298,7 @@ class OrderProductObject extends _Object {
   factory OrderProductObject.fromStashMap(Map<String, dynamic> data) {
     return OrderProductObject(
       productId: data['productId'],
+      variantId: data['variantId'] as String?,
       count: data['count'],
       singlePrice: data['singlePrice'],
       ingredients: [for (final ing in data['ingredients']) OrderIngredientObject.fromStashMap(ing)],

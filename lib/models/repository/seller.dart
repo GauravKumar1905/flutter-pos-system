@@ -258,6 +258,7 @@ class Seller extends ChangeNotifier {
       columns: [
         '$orderTable.*',
         'GROUP_CONCAT($productTable.productName, ${Database.queryDelimiter}) AS pn',
+        'GROUP_CONCAT($productTable.variantName, ${Database.queryDelimiter}) AS vn',
         'GROUP_CONCAT($productTable.count, ${Database.queryDelimiter}) AS pc',
       ],
       where: '$orderTable.createdAt BETWEEN ? AND ?',
@@ -274,11 +275,12 @@ class Seller extends ChangeNotifier {
 
     return rows.map((row) {
       final pn = (row['pn'] as String? ?? '').split(Database.delimiter);
+      final vn = (row['vn'] as String? ?? '').split(Database.delimiter);
       final pc = (row['pc'] as String? ?? '').split(Database.delimiter);
 
       return OrderObject.fromMap(
         row,
-        IterableZip([pn, pc]).map((e) => {'productName': e[0], 'count': int.tryParse(e[1])}),
+        IterableZip([pn, vn, pc]).map((e) => {'productName': e[0], 'variantName': e[1], 'count': int.tryParse(e[2])}),
       );
     }).toList();
   }

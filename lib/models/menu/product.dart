@@ -30,6 +30,12 @@ class Product extends Model<ProductObject>
   /// Optional size/price variants (e.g. Half Plate, Full Plate)
   late List<ProductVariant> variants;
 
+  /// The variant whose price/cost are mirrored into [price]/[cost].
+  ///
+  /// Set explicitly via [setVariants] ("Set as default"); falls back to the
+  /// first variant if it doesn't match any (e.g. that variant was deleted).
+  String? defaultVariantId;
+
   /// The time added to catalog
   final DateTime createdAt;
 
@@ -50,6 +56,7 @@ class Product extends Model<ProductObject>
     this.cost = 0,
     this.price = 0,
     List<ProductVariant>? variants,
+    this.defaultVariantId,
     String? imagePath,
     DateTime? createdAt,
     this.searchedAt,
@@ -58,8 +65,42 @@ class Product extends Model<ProductObject>
     this.index = index;
     this.imagePath = imagePath;
     this.variants = variants ?? [];
+    syncDefaultPricing();
 
     if (ingredients != null) replaceItems(ingredients);
+  }
+
+  /// The variant currently marked as default (used for headline price/cost).
+  ///
+  /// Falls back to the first variant if [defaultVariantId] doesn't match any,
+  /// and to a synthetic variant built from the legacy flat price/cost when
+  /// there are no variants at all (e.g. a product never edited since before
+  /// variants existed).
+  ProductVariant get defaultVariant {
+    if (variants.isEmpty) {
+      return ProductVariant(id: defaultVariantId ?? '', name: '', price: price, cost: cost);
+    }
+    return variants.firstWhere((v) => v.id == defaultVariantId, orElse: () => variants.first);
+  }
+
+  bool get hasVariants => variants.isNotEmpty;
+
+  /// Keep [price]/[cost] mirroring [defaultVariant].
+  ///
+  /// Call this whenever [variants] or [defaultVariantId] changes outside of
+  /// [ProductObject.diff] (which already does it for persisted updates).
+  void syncDefaultPricing() {
+    if (variants.isNotEmpty) {
+      final d = defaultVariant;
+      price = d.price;
+      cost = d.cost;
+    }
+  }
+
+  /// Replace the variant list (and optionally the default) through the
+  /// normal update/diff/save path, so the change is actually persisted.
+  Future<void> setVariants(List<ProductVariant> variants, {String? defaultVariantId}) {
+    return update(ProductObject(variants: variants, defaultVariantId: defaultVariantId ?? this.defaultVariantId));
   }
 
   factory Product.fromObject(ProductObject object) {
@@ -89,6 +130,7 @@ class Product extends Model<ProductObject>
       searchedAt: object.searchedAt,
       ingredients: {for (var ingredient in ingredients) ingredient!.id: ingredient},
       variants: object.variants,
+      defaultVariantId: object.defaultVariantId,
     )..prepareItem();
   }
 
@@ -155,6 +197,8 @@ class Product extends Model<ProductObject>
     createdAt: createdAt,
     imagePath: imagePath,
     ingredients: items.map((e) => e.toObject()).toList(),
+    variants: variants,
+    defaultVariantId: defaultVariantId,
   );
 }
 

@@ -47,17 +47,26 @@ class _MenuFormatter extends ModelFormatter<Menu, CellData> {
   @override
   List<List<CellData>> getRows() {
     return target.products.map<List<CellData>>((product) {
+      final variantInfo = product.hasVariants
+          ? [
+              product.defaultVariant,
+              ...product.variants.where((v) => v.id != product.defaultVariant.id),
+            ].map((v) => '* ${v.name},${v.price},${v.cost}').join('\n')
+          : '';
+
       final ingredientInfo = [
         for (var ingredient in product.items)
           '- ${ingredient.name},${ingredient.amount}${ingredient.itemList.map((quantity) => <String>['\n  + ${quantity.name}', quantity.amount.toString(), quantity.additionalPrice.toString(), quantity.additionalCost.toString()].join(',')).join('')}',
       ].join('\n');
+
+      final detail = [variantInfo, ingredientInfo].where((s) => s.isNotEmpty).join('\n');
 
       return [
         CellData(string: product.catalog.name),
         CellData(string: product.name),
         CellData(number: product.price),
         CellData(number: product.cost),
-        CellData(string: ingredientInfo),
+        CellData(string: detail),
       ];
     }).toList();
   }

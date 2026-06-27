@@ -5,6 +5,7 @@ import 'package:possystem/components/style/image_holder.dart';
 import 'package:possystem/helpers/validator.dart';
 import 'package:possystem/models/menu/catalog.dart';
 import 'package:possystem/models/menu/product.dart';
+import 'package:possystem/models/menu/product_variant.dart';
 import 'package:possystem/models/objects/menu_object.dart';
 import 'package:possystem/models/repository/menu.dart';
 import 'package:possystem/translator.dart';
@@ -20,13 +21,31 @@ class ProductModal extends StatefulWidget {
   State<ProductModal> createState() => _ProductModalState();
 }
 
+/// One row of the variant editor shown when creating a new product.
+///
+/// Every product is variant-first: even a "simple" product like a drink
+/// gets exactly one variant row here, which becomes its default variant.
+class _VariantRow {
+  final TextEditingController name;
+  final TextEditingController price;
+  final TextEditingController cost;
+
+  _VariantRow({String? name, String? price, String? cost})
+    : name = TextEditingController(text: name),
+      price = TextEditingController(text: price),
+      cost = TextEditingController(text: cost);
+
+  void dispose() {
+    name.dispose();
+    price.dispose();
+    cost.dispose();
+  }
+}
+
 class _ProductModalState extends State<ProductModal> with ItemModal<ProductModal> {
   late TextEditingController _nameController;
-  late TextEditingController _priceController;
-  late TextEditingController _costController;
   late FocusNode _nameFocusNode;
-  late FocusNode _priceFocusNode;
-  late FocusNode _costFocusNode;
+  late List<_VariantRow> _variantRows;
 
   String? _image;
 
@@ -41,7 +60,7 @@ class _ProductModalState extends State<ProductModal> with ItemModal<ProductModal
         TextFormField(
           key: const Key('product.name'),
           controller: _nameController,
-          textInputAction: .next,
+          textInputAction: widget.isNew ? .next : .done,
           textCapitalization: .words,
           focusNode: _nameFocusNode,
           decoration: InputDecoration(
@@ -60,60 +79,123 @@ class _ProductModalState extends State<ProductModal> with ItemModal<ProductModal
                   : null;
             },
           ),
+          onFieldSubmitted: widget.isNew ? null : handleFieldSubmit,
         ),
       ),
+      if (widget.isNew) ..._buildVariantFields(),
+    ];
+  }
+
+  List<Widget> _buildVariantFields() {
+    return [
       p(
-        TextFormField(
-          key: const Key('product.price'),
-          controller: _priceController,
-          textInputAction: .next,
-          keyboardType: .number,
-          focusNode: _priceFocusNode,
-          decoration: InputDecoration(
-            labelText: S.menuProductPriceLabel,
-            helperText: S.menuProductPriceHelper,
-            filled: false,
-          ),
-          validator: Validator.isNumber(S.menuProductPriceLabel, focusNode: _priceFocusNode),
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          child: Text('Variants', style: Theme.of(context).textTheme.titleSmall),
         ),
       ),
+      for (var i = 0; i < _variantRows.length; i++) _buildVariantRow(i),
       p(
-        TextFormField(
-          key: const Key('product.cost'),
-          controller: _costController,
-          textInputAction: .done,
-          keyboardType: .number,
-          focusNode: _costFocusNode,
-          decoration: InputDecoration(
-            labelText: S.menuProductCostLabel,
-            helperText: S.menuProductCostHelper,
-            filled: false,
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: const Key('product.variant.add'),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add Variant'),
+            onPressed: _addVariantRow,
           ),
-          onFieldSubmitted: handleFieldSubmit,
-          validator: Validator.positiveNumber(S.menuProductCostLabel, focusNode: _costFocusNode),
         ),
       ),
     ];
   }
 
-  Future<Product> getProduct() async {
-    final object = _parseObject();
-    final product =
-        widget.product ??
-        Product(
-          index: widget.catalog.newIndex,
-          name: object.name!,
-          price: object.price!,
-          cost: object.cost!,
-          imagePath: _image,
-        );
+  Widget _buildVariantRow(int index) {
+    final row = _variantRows[index];
+    return p(
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: TextFormField(
+                key: Key('product.variant.$index.name'),
+                controller: row.name,
+                textCapitalization: .words,
+                decoration: InputDecoration(
+                  labelText: index == 0 ? 'Name (default)' : 'Name',
+                  hintText: 'e.g. Regular, Half Plate',
+                ),
+                validator: Validator.textLimit('Variant Name', 30),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 2,
+              child: TextFormField(
+                key: Key('product.variant.$index.price'),
+                controller: row.price,
+                keyboardType: .number,
+                decoration: const InputDecoration(labelText: 'Price'),
+                validator: Validator.isNumber('Price'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 2,
+              child: TextFormField(
+                key: Key('product.variant.$index.cost'),
+                controller: row.cost,
+                keyboardType: .number,
+                decoration: const InputDecoration(labelText: 'Cost'),
+                validator: Validator.positiveNumber('Cost'),
+              ),
+            ),
+            if (_variantRows.length > 1)
+              IconButton(
+                key: Key('product.variant.$index.delete'),
+                icon: const Icon(Icons.delete_outline, size: 20),
+                onPressed: () => _removeVariantRow(index),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
+  void _addVariantRow() {
+    setState(() => _variantRows.add(_VariantRow()));
+  }
+
+  void _removeVariantRow(int index) {
+    setState(() => _variantRows.removeAt(index).dispose());
+  }
+
+  Future<Product> getProduct() async {
     if (widget.isNew) {
+      final variants = _variantRows
+          .map((row) => ProductVariant(
+                name: row.name.text.trim(),
+                price: num.tryParse(row.price.text.trim()) ?? 0,
+                cost: num.tryParse(row.cost.text.trim()) ?? 0,
+              ))
+          .toList();
+
+      final product = Product(
+        index: widget.catalog.newIndex,
+        name: _nameController.text.trim(),
+        variants: variants,
+        defaultVariantId: variants.first.id,
+        imagePath: _image,
+      );
+
       await widget.catalog.addItem(product);
-    } else {
-      await product.update(object);
+      return product;
     }
 
+    final product = widget.product!;
+    await product.update(ProductObject(name: _nameController.text.trim(), imagePath: _image));
     return product;
   }
 
@@ -123,22 +205,18 @@ class _ProductModalState extends State<ProductModal> with ItemModal<ProductModal
 
     final p = widget.product;
     _nameController = TextEditingController(text: p?.name);
-    _priceController = TextEditingController(text: p?.price.toString());
-    _costController = TextEditingController(text: p?.cost.toString());
     _nameFocusNode = FocusNode();
-    _priceFocusNode = FocusNode();
-    _costFocusNode = FocusNode();
     _image = widget.product?.imagePath;
+    _variantRows = [_VariantRow()];
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _priceController.dispose();
-    _costController.dispose();
     _nameFocusNode.dispose();
-    _priceFocusNode.dispose();
-    _costFocusNode.dispose();
+    for (final row in _variantRows) {
+      row.dispose();
+    }
     super.dispose();
   }
 
@@ -149,14 +227,5 @@ class _ProductModalState extends State<ProductModal> with ItemModal<ProductModal
     if (mounted) {
       context.pop(product.id);
     }
-  }
-
-  ProductObject _parseObject() {
-    return ProductObject(
-      name: _nameController.text,
-      imagePath: _image,
-      price: num.tryParse(_priceController.text),
-      cost: num.tryParse(_costController.text),
-    );
   }
 }

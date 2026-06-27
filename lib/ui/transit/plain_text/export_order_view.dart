@@ -69,7 +69,7 @@ class ExportOrderView extends TransitOrderList {
               .join('、');
           return S.transitFormatTextOrderProduct(
             p.ingredients.length,
-            p.productName,
+            p.displayName,
             p.catalogName,
             p.count,
             p.totalPrice.toCurrency(),

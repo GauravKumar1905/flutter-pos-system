@@ -32,7 +32,7 @@ class OrderFormatter {
       for (final product in order.products)
         [
           CellData(number: order.periodSeq),
-          CellData(string: product.productName),
+          CellData(string: product.displayName),
           CellData(string: product.catalogName),
           CellData(number: product.count),
           CellData(number: product.singlePrice.toCurrencyNum()),

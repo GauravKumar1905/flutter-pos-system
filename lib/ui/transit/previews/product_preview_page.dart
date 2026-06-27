@@ -53,6 +53,18 @@ class ProductPreviewPage extends PreviewPage<Product> {
       children: [
         MetaBlock.withString(context, <String>[S.menuProductMetaPrice(item.price), S.menuProductMetaCost(item.cost)])!,
         const SizedBox(height: 8.0),
+        if (item.hasVariants)
+          for (final variant in item.variants)
+            ListTile(
+              title: Text(variant.id == item.defaultVariantId ? '${variant.name} (Default)' : variant.name),
+              subtitle: MetaBlock.withString(context, <String>[
+                S.menuProductMetaPrice(variant.price),
+                S.menuProductMetaCost(variant.cost),
+              ], textStyle: textStyle),
+              visualDensity: .compact,
+              minVerticalPadding: 0,
+            ),
+        if (item.hasVariants) const SizedBox(height: 8.0),
         for (final ingredient in item.items)
           Column(
             children: [

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:possystem/helpers/logger.dart';
 import 'package:possystem/helpers/util.dart';
 import 'package:possystem/models/menu/product.dart';
+import 'package:possystem/models/menu/product_variant.dart';
 import 'package:possystem/models/objects/order_object.dart';
 import 'package:possystem/models/order/cart_product.dart';
 import 'package:possystem/models/order/order_attribute_option.dart';
@@ -92,9 +93,13 @@ class Cart extends ChangeNotifier {
     }
   }
 
-  /// Add [product] to the cart.
-  void add(Product product, {num? variantPrice}) {
-    final p = CartProduct(product, isSelected: true, singlePrice: variantPrice ?? product.price);
+  /// Add [product] to the cart, optionally with a chosen [variant].
+  void add(Product product, {ProductVariant? variant}) {
+    final p = CartProduct(
+      product,
+      isSelected: true,
+      variant: variant,
+    );
     products.add(p);
 
     toggleAll(false, except: p);
@@ -239,12 +244,13 @@ class Cart extends ChangeNotifier {
 
   /// Change the price of selected products by discount.
   ///
-  /// It use original price to calculate the final price.
+  /// It use the chosen variant's price (or the product's flat price if no
+  /// variant was chosen) as the original price to calculate the final price.
   void selectedUpdateDiscount(int? discount) {
     if (discount == null) return;
 
     for (var e in selected) {
-      final price = e.product.price * discount / 100;
+      final price = e.basePrice * discount / 100;
       e.singlePrice = price.toCurrencyNum();
     }
     notifyListeners();

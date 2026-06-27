@@ -3,6 +3,7 @@ import 'package:possystem/models/menu/catalog.dart';
 import 'package:possystem/models/menu/product.dart';
 import 'package:possystem/models/menu/product_ingredient.dart';
 import 'package:possystem/models/menu/product_quantity.dart';
+import 'package:possystem/models/menu/product_variant.dart';
 import 'package:possystem/models/model.dart';
 import 'package:possystem/models/objects/order_attribute_object.dart';
 import 'package:possystem/models/order/order_attribute.dart';
@@ -56,6 +57,9 @@ class MenuParser extends ModelParser<Menu, Product> {
     final vQua = Validator.textLimit(S.stockQuantityNameLabel, 30);
     final vAmount = Validator.positiveNumber(S.stockIngredientAmountLabel, allowNull: true);
     final vQuaAmount = Validator.positiveNumber(S.menuQuantityAmountLabel, allowNull: true);
+    final vVarName = Validator.textLimit('Variant Name', 30);
+    final vVarPrice = Validator.isNumber('Variant Price');
+    final vVarCost = Validator.positiveNumber('Variant Cost');
 
     final lines = row[4].toString().split('\n').map((e) => e.trim());
     for (final line in lines) {
@@ -68,6 +72,14 @@ class MenuParser extends ModelParser<Menu, Product> {
         final columns = line.substring(2).split(',');
 
         final msg = (columns.isEmpty ? null : vQua(columns[0])) ?? (columns.length < 2 ? null : vQuaAmount(columns[1]));
+        if (msg != null) return msg;
+      } else if (line.startsWith('* ')) {
+        final columns = line.substring(2).split(',');
+
+        final msg =
+            (columns.isEmpty ? null : vVarName(columns[0])) ??
+            (columns.length < 2 ? null : vVarPrice(columns[1])) ??
+            (columns.length < 3 ? null : vVarCost(columns[2]));
         if (msg != null) return msg;
       }
     }
@@ -93,6 +105,7 @@ class MenuParser extends ModelParser<Menu, Product> {
     final lines = value.split('\n');
     ProductIngredient? ingredient;
     ProductIngredient? oriIngredient;
+    final variants = <ProductVariant>[];
 
     for (var line in lines.map((e) => e.trim())) {
       if (line.startsWith('- ')) {
@@ -108,7 +121,30 @@ class MenuParser extends ModelParser<Menu, Product> {
 
         final quantity = ProductQuantity.fromRow(oriIngredient?.getItemByName(columns[0]), columns);
         ingredient.addItem(quantity, save: false);
+      } else if (line.startsWith('* ')) {
+        final columns = line.substring(2).split(',');
+        if (columns.length < 3) continue;
+
+        final name = columns[0].trim();
+        final price = num.tryParse(columns[1].trim());
+        final cost = num.tryParse(columns[2].trim());
+        if (price == null || cost == null) continue;
+
+        ProductVariant? oriVariant;
+        for (final v in ori?.variants ?? const <ProductVariant>[]) {
+          if (v.name == name) {
+            oriVariant = v;
+            break;
+          }
+        }
+        variants.add(ProductVariant(id: oriVariant?.id, name: name, price: price, cost: cost));
       }
+    }
+
+    if (variants.isNotEmpty) {
+      product.variants = variants;
+      product.defaultVariantId = variants.first.id;
+      product.syncDefaultPricing();
     }
 
     return product;

@@ -462,8 +462,8 @@
   "@transitImportColumnStatus": {
     "description": "Additional status of the data displayed"
   },
-  "transitFormatFieldProductIngredientTitle": "Ingredient Information",
-  "transitFormatFieldProductIngredientNote": "Information of all product ingredients, format as follows:\n- Ingredient 1, Default usage amount\n  + Quantity a, Additional usage amount, Additional price, Additional cost\n  + Quantity b, Additional usage amount, Additional price, Additional cost\n- Ingredient 2, Default usage amount",
+  "transitFormatFieldProductIngredientTitle": "Ingredient & Variant Information",
+  "transitFormatFieldProductIngredientNote": "Information of all product ingredients, format as follows:\n- Ingredient 1, Default usage amount\n  + Quantity a, Additional usage amount, Additional price, Additional cost\n  + Quantity b, Additional usage amount, Additional price, Additional cost\n- Ingredient 2, Default usage amount\n\nOptional size/price variants (e.g. Half/Full), one per line. The first one becomes the default:\n* Variant name, Price, Cost",
   "transitFormatFieldReplenishmentTitle": "Replenishment Amount",
   "transitFormatFieldReplenishmentNote": "The amount of specific ingredients during each replenishment, format as follows:\n- Ingredient 1, Replenishment amount\n- Ingredient 2, Replenishment amount",
   "transitFormatFieldAttributeOptionTitle": "Customer Setting Options",
@@ -1610,6 +1610,7 @@
     }
   },
   "orderCartProductIncrease": "Increase Quantity",
+  "orderCartProductDecrease": "Decrease Quantity",
   "orderCartProductDefaultQuantity": "Default Quantity",
   "orderCartProductIngredient": "{name} ({quantity})",
   "@orderCartProductIngredient": {
@@ -1671,6 +1672,8 @@
   "orderCheckoutStashDialogRestoreContent": "This action will override the current cart contents.",
   "orderCheckoutStashDialogDeleteName": "order",
   "orderCheckoutAttributeTab": "Customer",
+  "orderCheckoutAttributeNoteTitle": "Note",
+  "orderCheckoutAttributeNoteHint": "Some notes about this order",
   "orderCheckoutDetailsTab": "Details",
   "orderCheckoutDetailsCalculatorLabelPaid": "Paid",
   "orderCheckoutDetailsCalculatorLabelChange": "Change",

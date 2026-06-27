@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:possystem/models/menu/product.dart';
 import 'package:possystem/models/menu/product_quantity.dart';
+import 'package:possystem/models/menu/product_variant.dart';
 import 'package:possystem/models/objects/order_object.dart';
 
 /// Product in the cart.
@@ -10,10 +11,17 @@ class CartProduct extends ChangeNotifier {
   /// Menu product.
   final Product product;
 
+  /// The variant chosen when this entry was added to the cart, if any.
+  ProductVariant? variant;
+
   /// Is this product being selected in cart?
   bool isSelected;
 
   num _singlePrice;
+
+  /// Base cost for this cart entry (the product's cost, or a variant's cost
+  /// when a variant was selected). Ingredient quantity costs are added on top.
+  final num _baseCost;
 
   int _count;
 
@@ -24,10 +32,18 @@ class CartProduct extends ChangeNotifier {
 
   /// [product] will set the default [singlePrice] and [quantities] is default
   /// to empty map.
-  CartProduct(this.product, {int count = 1, num? singlePrice, this.isSelected = false, Map<String, String>? quantities})
-    : _singlePrice = singlePrice ?? product.price,
-      _count = count,
-      _quantities = quantities ?? <String, String>{};
+  CartProduct(
+    this.product, {
+    int count = 1,
+    num? singlePrice,
+    num? singleCost,
+    this.variant,
+    this.isSelected = false,
+    Map<String, String>? quantities,
+  }) : _singlePrice = singlePrice ?? variant?.price ?? product.price,
+       _baseCost = singleCost ?? variant?.cost ?? product.cost,
+       _count = count,
+       _quantities = quantities ?? <String, String>{};
 
   /// product's ID
   String get id => product.id;
@@ -35,8 +51,15 @@ class CartProduct extends ChangeNotifier {
   /// product's name
   String get name => product.name;
 
+  /// Display name combining product and variant, e.g. "Chaap — Full".
+  String get displayName => variant == null ? name : '$name — ${variant!.name}';
+
+  /// The price used as the discount/original-price basis: the chosen
+  /// variant's price if one was selected, otherwise the product's flat price.
+  num get basePrice => variant?.price ?? product.price;
+
   /// The cost of single product.
-  num get cost => quantities.fold<num>(product.cost, (v, q) => v + (q.additionalCost));
+  num get cost => quantities.fold<num>(_baseCost, (v, q) => v + (q.additionalCost));
 
   /// Total price which is single price times the count.
   num get totalPrice => _count * _singlePrice;
@@ -103,6 +126,18 @@ class CartProduct extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Decrease product count, stopping at 1.
+  ///
+  /// To remove the item entirely, use [Cart.removeAt] (e.g. swipe-to-delete
+  /// or the bulk "Delete" action) instead.
+  void decrement() {
+    if (_count > 1) {
+      _count -= 1;
+
+      notifyListeners();
+    }
+  }
+
   /// Toggle selected state.
   ///
   /// If [checked] is different with current state return false else true.
@@ -129,6 +164,10 @@ class CartProduct extends ChangeNotifier {
         _quantities.remove(entry.key);
       }
     }
+    // drop a variant that no longer exists on the product
+    if (variant != null && !product.variants.any((v) => v.id == variant!.id)) {
+      variant = null;
+    }
   }
 
   /// Convert to [OrderProductObject].
@@ -137,11 +176,13 @@ class CartProduct extends ChangeNotifier {
       productId: product.id,
       productName: product.name,
       catalogName: product.catalog.name,
+      variantId: variant?.id,
+      variantName: variant?.name ?? '',
       count: _count,
       singleCost: cost,
       singlePrice: _singlePrice,
-      originalPrice: product.price,
-      isDiscount: _singlePrice < product.price,
+      originalPrice: basePrice,
+      isDiscount: _singlePrice < basePrice,
       ingredients: product.items.map((e) => OrderIngredientObject.fromModel(e, getQuantityId(e.id))).toList(),
     );
   }

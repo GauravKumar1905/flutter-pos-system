@@ -41,7 +41,7 @@ class _VariantPickerSheet extends StatelessWidget {
               product: product,
               variant: variant,
               onTap: () {
-                Cart.instance.add(product, variantPrice: variant.price);
+                Cart.instance.add(product, variant: variant);
                 Navigator.of(context).pop();
               },
             )),
@@ -66,6 +66,7 @@ class _VariantTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         title: Text(variant.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text('Cost: ${variant.cost.toStringAsFixed(0)}'),
         trailing: Text(
           variant.price.toStringAsFixed(0),
           style: theme.textTheme.titleMedium?.copyWith(

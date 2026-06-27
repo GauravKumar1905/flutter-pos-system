@@ -133,6 +133,7 @@ class _ProductPageState extends State<ProductPage> {
 
   Widget _buildVariantsSection() {
     final product = widget.product;
+    final defaultId = product.defaultVariant.id;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -141,11 +142,11 @@ class _ProductPageState extends State<ProductPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Size Variants (Half/Full Plate)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              const Text('Variants', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               TextButton.icon(
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add'),
-                onPressed: () => _showAddVariantDialog(),
+                onPressed: () => _showVariantDialog(),
               ),
             ],
           ),
@@ -155,29 +156,60 @@ class _ProductPageState extends State<ProductPage> {
               child: Text('No variants. Product uses its base price.', style: TextStyle(color: Colors.grey, fontSize: 13)),
             )
           else
-            ...product.variants.asMap().entries.map((entry) => ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              title: Text(entry.value.name),
-              subtitle: Text('Price: \${entry.value.price.toStringAsFixed(0)}'),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                onPressed: () => _removeVariant(entry.key),
-              ),
-            )),
+            ...product.variants.map((variant) {
+              final isDefault = variant.id == defaultId;
+              return ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(variant.name),
+                subtitle: Text(
+                  'Price: ${variant.price.toStringAsFixed(0)} · Cost: ${variant.cost.toStringAsFixed(0)}',
+                ),
+                onTap: () => _showVariantDialog(existing: variant),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isDefault)
+                      const Padding(
+                        padding: EdgeInsets.only(right: 4),
+                        child: Text('Default', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      )
+                    else
+                      IconButton(
+                        icon: const Icon(Icons.star_border, size: 20),
+                        tooltip: 'Set as default',
+                        onPressed: () => _setDefaultVariant(variant.id),
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      tooltip: 'Edit',
+                      onPressed: () => _showVariantDialog(existing: variant),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                      onPressed: () => _removeVariant(variant.id),
+                    ),
+                  ],
+                ),
+              );
+            }),
           const Divider(),
         ],
       ),
     );
   }
 
-  Future<void> _showAddVariantDialog() async {
-    final nameController = TextEditingController();
-    final priceController = TextEditingController();
+  /// Shared dialog for both adding a new variant and editing an existing
+  /// one's name/price/cost. When [existing] is given, saving keeps its id
+  /// so the variant's history (e.g. default status) carries over.
+  Future<void> _showVariantDialog({ProductVariant? existing}) async {
+    final nameController = TextEditingController(text: existing?.name);
+    final priceController = TextEditingController(text: existing?.price.toString());
+    final costController = TextEditingController(text: existing?.cost.toString());
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Size Variant'),
+        title: Text(existing == null ? 'Add Size Variant' : 'Edit Variant'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -192,6 +224,12 @@ class _ProductPageState extends State<ProductPage> {
               decoration: const InputDecoration(labelText: 'Price'),
               keyboardType: TextInputType.number,
             ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: costController,
+              decoration: const InputDecoration(labelText: 'Cost'),
+              keyboardType: TextInputType.number,
+            ),
           ],
         ),
         actions: [
@@ -200,12 +238,18 @@ class _ProductPageState extends State<ProductPage> {
             onPressed: () {
               final name = nameController.text.trim();
               final price = num.tryParse(priceController.text.trim());
-              if (name.isNotEmpty && price != null) {
-                _addVariant(ProductVariant(name: name, price: price));
+              final cost = num.tryParse(costController.text.trim());
+              if (name.isNotEmpty && price != null && cost != null) {
+                final variant = ProductVariant(id: existing?.id, name: name, price: price, cost: cost);
+                if (existing == null) {
+                  _addVariant(variant);
+                } else {
+                  _updateVariant(variant);
+                }
                 Navigator.pop(ctx);
               }
             },
-            child: const Text('Add'),
+            child: Text(existing == null ? 'Add' : 'Save'),
           ),
         ],
       ),
@@ -214,15 +258,25 @@ class _ProductPageState extends State<ProductPage> {
 
   Future<void> _addVariant(ProductVariant variant) async {
     final product = widget.product;
-    product.variants = [...product.variants, variant];
-    await product.save({'\${product.prefix}.variants': product.variants.map((v) => v.toMap()).toList()});
+    await product.setVariants([...product.variants, variant]);
     setState(() {});
   }
 
-  Future<void> _removeVariant(int index) async {
+  Future<void> _updateVariant(ProductVariant variant) async {
     final product = widget.product;
-    product.variants = [...product.variants]..removeAt(index);
-    await product.save({'\${product.prefix}.variants': product.variants.map((v) => v.toMap()).toList()});
+    await product.setVariants([for (final v in product.variants) if (v.id == variant.id) variant else v]);
+    setState(() {});
+  }
+
+  Future<void> _removeVariant(String id) async {
+    final product = widget.product;
+    await product.setVariants(product.variants.where((v) => v.id != id).toList());
+    setState(() {});
+  }
+
+  Future<void> _setDefaultVariant(String id) async {
+    final product = widget.product;
+    await product.setVariants(product.variants, defaultVariantId: id);
     setState(() {});
   }
 

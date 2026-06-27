@@ -68,6 +68,13 @@
       android:name="com.yalantis.ucrop.UCropActivity"
       android:screenOrientation="portrait"
       android:theme="@style/Ucrop.CropTheme"/>
+
+    <!-- Local dev build: dummy google-services.json has no valid API key,
+         which makes recent Firebase SDKs crash on auto-init. Disable it. -->
+    <provider
+      android:name="com.google.firebase.provider.FirebaseInitProvider"
+      android:authorities="${applicationId}.firebaseinitprovider"
+      tools:node="remove" />
   </application>
 
   <queries>
