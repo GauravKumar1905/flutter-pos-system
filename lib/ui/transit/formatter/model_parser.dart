@@ -57,7 +57,12 @@ class MenuParser extends ModelParser<Menu, Product> {
     final vQua = Validator.textLimit(S.stockQuantityNameLabel, 30);
     final vAmount = Validator.positiveNumber(S.stockIngredientAmountLabel, allowNull: true);
     final vQuaAmount = Validator.positiveNumber(S.menuQuantityAmountLabel, allowNull: true);
-    final vVarName = Validator.textLimit('Variant Name', 30);
+    final vVarName = Validator.textLimit(
+      'Variant Name',
+      30,
+      validator: (name) =>
+          RegExp(r'[，、：；（）]').hasMatch(name) ? 'Variant name cannot contain ， 、 ： ； ( )' : null,
+    );
     final vVarPrice = Validator.isNumber('Variant Price');
     final vVarCost = Validator.positiveNumber('Variant Cost');
 

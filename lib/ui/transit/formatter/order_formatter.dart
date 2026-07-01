@@ -32,7 +32,8 @@ class OrderFormatter {
       for (final product in order.products)
         [
           CellData(number: order.periodSeq),
-          CellData(string: product.displayName),
+          CellData(string: product.productName),
+          CellData(string: product.variantName),
           CellData(string: product.catalogName),
           CellData(number: product.count),
           CellData(number: product.singlePrice.toCurrencyNum()),
@@ -82,6 +83,7 @@ class OrderFormatter {
   static List<String> get productHeaders => [
     S.transitFormatFieldOrderProductHeaderNo,
     S.transitFormatFieldOrderProductHeaderName,
+    S.transitFormatFieldOrderProductHeaderVariant,
     S.transitFormatFieldOrderProductHeaderCatalog,
     S.transitFormatFieldOrderProductHeaderCount,
     S.transitFormatFieldOrderProductHeaderPrice,
@@ -90,7 +92,7 @@ class OrderFormatter {
   ];
 
   /// Order's ingredients detail at which index, 0-index
-  static const ingredientPosition = 6;
+  static const ingredientPosition = 7;
 
   static List<String> get ingredientHeaders => [
     S.transitFormatFieldOrderIngredientHeaderNo,

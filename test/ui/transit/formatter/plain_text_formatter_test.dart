@@ -3,6 +3,7 @@ import 'package:possystem/models/menu/catalog.dart';
 import 'package:possystem/models/menu/product.dart';
 import 'package:possystem/models/menu/product_ingredient.dart';
 import 'package:possystem/models/menu/product_quantity.dart';
+import 'package:possystem/models/menu/product_variant.dart';
 import 'package:possystem/models/model.dart';
 import 'package:possystem/models/order/order_attribute.dart';
 import 'package:possystem/models/order/order_attribute_option.dart';
@@ -135,6 +136,58 @@ void main() {
           }).toList(),
         ),
       );
+    });
+
+    test('menu with variants', () {
+      final menu = Menu();
+      Stock();
+      Quantities();
+
+      menu.replaceItems({
+        'V': Catalog(
+          id: 'V',
+          name: 'V',
+          products: {
+            'pV': Product(
+              id: 'pV',
+              name: 'pV',
+              index: 1,
+              price: 10,
+              cost: 5,
+              variants: [
+                ProductVariant(id: 'v1', name: 'Full', price: 10, cost: 5),
+                ProductVariant(id: 'v2', name: 'Half', price: 6, cost: 3),
+              ],
+              defaultVariantId: 'v1',
+            ),
+          },
+        ),
+      });
+      for (var c in menu.items) {
+        c.prepareItem();
+        for (var p in c.items) {
+          p.prepareItem();
+        }
+      }
+
+      final formatter = findPlainTextFormatter(.menu);
+      final text = formatter.getRows().map((row) => row.join('\n')).join('\n\n');
+
+      // Variants are exported on their own line, default first.
+      expect(text, contains('This product has variants：Full（10,5）、Half（6,3）'));
+
+      // Round-trip: re-importing the text restores the variants.
+      final lines = text.trim().split('\n');
+      lines.removeAt(0); // drop the menu header line
+      final items = formatter.format<Product>([lines]);
+
+      final imported = items.single.item!;
+      expect(imported.name, equals('pV'));
+      expect(
+        imported.variants.map((v) => '${v.name},${v.price},${v.cost}').toList(),
+        equals(['Full,10,5', 'Half,6,3']),
+      );
+      expect(imported.defaultVariant.name, equals('Full'));
     });
 
     test('stock', () {

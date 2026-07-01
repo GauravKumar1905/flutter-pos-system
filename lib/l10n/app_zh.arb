@@ -490,6 +490,7 @@
   "transitFormatFieldOrderProductTitle": "訂單產品細項",
   "transitFormatFieldOrderProductHeaderNo": "編號",
   "transitFormatFieldOrderProductHeaderName": "產品",
+  "transitFormatFieldOrderProductHeaderVariant": "規格",
   "transitFormatFieldOrderProductHeaderCatalog": "種類",
   "transitFormatFieldOrderProductHeaderCount": "數量",
   "transitFormatFieldOrderProductHeaderPrice": "單一售價",
@@ -671,6 +672,10 @@
         "type": "String"
       }
     }
+  },
+  "transitFormatTextMenuVariants": "此產品有以下規格",
+  "@transitFormatTextMenuVariants": {
+    "description": "Prefix of the plain-text line listing a product's price/size variants, so regex can detect it during import"
   },
   "transitFormatTextMenuIngredient": "{amount} 個 {name}，{details}",
   "@transitFormatTextMenuIngredient": {

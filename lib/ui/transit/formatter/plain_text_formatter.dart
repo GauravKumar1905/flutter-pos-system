@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:possystem/helpers/logger.dart';
 import 'package:possystem/helpers/util.dart';
+import 'package:possystem/models/menu/product.dart';
 import 'package:possystem/models/repository.dart';
 import 'package:possystem/models/repository/menu.dart';
 import 'package:possystem/models/repository/order_attributes.dart';
@@ -49,6 +50,8 @@ class _MenuFormatter extends ModelFormatter<Menu, String> {
   static const ingredientDelimiter = '；';
   static const quantityPrefix = '：';
   static const quantityDelimiter = '、';
+  static const variantPrefix = '：';
+  static const variantDelimiter = '、';
 
   @override
   List<String> getHeader() => [];
@@ -67,38 +70,55 @@ class _MenuFormatter extends ModelFormatter<Menu, String> {
             catalog.name,
             S.transitFormatTextMenuCatalogDetails(catalog.length),
           ),
-          for (final product in catalog.itemList)
-            S.transitFormatTextMenuProduct(
-              (productCount++).toString(),
-              product.name,
-              product.price.toCurrency(),
-              product.cost.toCurrency(),
-              S.transitFormatTextMenuProductDetails(
-                product.items.length,
-                product.items.map((e) => e.name).join('、'),
-                product.items
-                    .map<String>(
-                      (ingredient) => S.transitFormatTextMenuIngredient(
-                        nf.format(ingredient.amount),
-                        ingredient.name,
-                        S.transitFormatTextMenuIngredientDetails(
-                          ingredient.items.length,
-                          quantityPrefix +
-                              ingredient.items
-                                  .map(
-                                    (quantity) =>
-                                        '${quantity.name}（${S.transitFormatTextMenuQuantity(nf.format(quantity.amount), quantity.additionalPrice.toCurrency(), quantity.additionalCost.toCurrency())}）',
-                                  )
-                                  .join(quantityDelimiter),
-                        ),
-                      ),
-                    )
-                    .join(ingredientDelimiter),
-              ),
-            ),
+          for (final product in catalog.itemList) _formatProduct(product, (productCount++).toString(), nf),
         ];
       }),
     ];
+  }
+
+  /// Build the plain-text line(s) for a single product.
+  ///
+  /// Products with variants get an extra line listing their price/size
+  /// variants so that [transformRows] can restore them on import.
+  String _formatProduct(Product product, String index, NumberFormat nf) {
+    final base = S.transitFormatTextMenuProduct(
+      index,
+      product.name,
+      product.price.toCurrency(),
+      product.cost.toCurrency(),
+      S.transitFormatTextMenuProductDetails(
+        product.items.length,
+        product.items.map((e) => e.name).join('、'),
+        product.items
+            .map<String>(
+              (ingredient) => S.transitFormatTextMenuIngredient(
+                nf.format(ingredient.amount),
+                ingredient.name,
+                S.transitFormatTextMenuIngredientDetails(
+                  ingredient.items.length,
+                  quantityPrefix +
+                      ingredient.items
+                          .map(
+                            (quantity) =>
+                                '${quantity.name}（${S.transitFormatTextMenuQuantity(nf.format(quantity.amount), quantity.additionalPrice.toCurrency(), quantity.additionalCost.toCurrency())}）',
+                          )
+                          .join(quantityDelimiter),
+                ),
+              ),
+            )
+            .join(ingredientDelimiter),
+      ),
+    );
+
+    if (!product.hasVariants) return base;
+
+    // Default variant first, matching the field (CSV/Excel) formatter ordering.
+    final ordered = [
+      product.defaultVariant,
+      ...product.variants.where((v) => v.id != product.defaultVariant.id),
+    ];
+    final variants = ordered.map((v) => '${v.name}（${v.price},${v.cost}）').join(variantDelimiter);
+    return '$base\n${S.transitFormatTextMenuVariants}$variantPrefix$variants';
   }
 
   @override
@@ -118,31 +138,38 @@ class _MenuFormatter extends ModelFormatter<Menu, String> {
               .transitFormatTextMenuQuantity('(?<amount>$_reDig)', '(?<price>$_reDig)', '(?<cost>$_reDig)')
               .replaceAll(r'$', r'\$'),
     );
+    final reVariants = RegExp(_rePre + S.transitFormatTextMenuVariants);
+    final reVariant = RegExp('$_rePre(?<name>.+)（(?<price>$_reDig),(?<cost>$_reDig)）');
 
     final lines = rows[0]
         .expand((e) => e.split('\n').map((e) => e.trim())) // split by line
         .where((e) => e.isNotEmpty);
     final result = <List<String>>[];
-    String catalog = '', product = '', price = '', cost = '';
+    // [detail] accumulates the "- ingredient", "+ quantity" and "* variant"
+    // lines for the current product until the next product/category finalizes
+    // it. Keeping a single accumulator lets variants and ingredients live on
+    // separate lines in any order.
+    String catalog = '', product = '', price = '', cost = '', detail = '';
     bool foundProduct = false;
-    void addProductIfNeed() {
+    void finalizeProduct() {
       if (foundProduct) {
-        result.add([catalog, product, price, cost]);
+        result.add(detail.isEmpty ? [catalog, product, price, cost] : [catalog, product, price, cost, detail]);
         foundProduct = false;
+        detail = '';
       }
     }
 
     for (final line in lines) {
       RegExpMatch? match = reCatalog.firstMatch(line);
       if (match != null) {
-        addProductIfNeed();
+        finalizeProduct();
         catalog = match.namedGroup('name')!;
         continue;
       }
 
       match = reProduct.firstMatch(line);
       if (match != null) {
-        addProductIfNeed();
+        finalizeProduct();
         product = match.namedGroup('name')!;
         price = match.namedGroup('price')!;
         cost = match.namedGroup('cost')!;
@@ -150,17 +177,32 @@ class _MenuFormatter extends ModelFormatter<Menu, String> {
         continue;
       }
 
+      // Variant line, e.g. "This product has variants：Full（10,5）、Half（6,3）".
+      if (reVariants.firstMatch(line) != null) {
+        final idx = line.indexOf(variantPrefix);
+        if (idx != -1) {
+          for (final v in line.substring(idx + 1).split(variantDelimiter)) {
+            match = reVariant.firstMatch(v);
+            if (match != null) {
+              detail =
+                  '$detail\n* ${match.namedGroup('name')!},'
+                  '${match.namedGroup('price')!},'
+                  '${match.namedGroup('cost')!}';
+            }
+          }
+        }
+        continue;
+      }
+
       final ingSplit = line.split(ingredientDelimiter);
-      String ingredients = '';
-      foundProduct = false;
       for (final ing in ingSplit) {
         int quaStartIndex = ing.indexOf(quantityPrefix);
         if (quaStartIndex == -1) quaStartIndex = ing.length;
 
         match = reIngredient.firstMatch(ing.substring(0, quaStartIndex));
         if (match != null) {
-          ingredients =
-              '$ingredients\n- ${match.namedGroup('name')!},'
+          detail =
+              '$detail\n- ${match.namedGroup('name')!},'
               '${match.namedGroup('amount')!}';
         }
         if (quaStartIndex == ing.length) continue;
@@ -169,19 +211,17 @@ class _MenuFormatter extends ModelFormatter<Menu, String> {
         for (final qua in quaSplit) {
           match = reQuantity.firstMatch(qua);
           if (match != null) {
-            ingredients =
-                '$ingredients\n+ ${match.namedGroup('name')!},'
+            detail =
+                '$detail\n+ ${match.namedGroup('name')!},'
                 '${match.namedGroup('amount')!},'
                 '${match.namedGroup('price')!},'
                 '${match.namedGroup('cost')!},';
           }
         }
       }
-
-      result.add([catalog, product, price, cost, ingredients]);
     }
 
-    addProductIfNeed();
+    finalizeProduct();
     return result;
   }
 }

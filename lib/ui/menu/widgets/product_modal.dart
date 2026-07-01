@@ -10,6 +10,15 @@ import 'package:possystem/models/objects/menu_object.dart';
 import 'package:possystem/models/repository/menu.dart';
 import 'package:possystem/translator.dart';
 
+/// Characters that would corrupt the delimiter-based encoding used when a
+/// variant is exported (e.g. `* name,price,cost` in CSV or `name（price,cost）`
+/// in plain text). Rejecting them on input keeps menu export/import lossless.
+final _variantNameForbidden = RegExp(r'[,，、：；（）\n]');
+
+String? _validateVariantName(String name) {
+  return _variantNameForbidden.hasMatch(name) ? 'Variant name cannot contain , ， 、 ： ； ( )' : null;
+}
+
 class ProductModal extends StatefulWidget {
   final Product? product;
   final Catalog catalog;
@@ -127,7 +136,7 @@ class _ProductModalState extends State<ProductModal> with ItemModal<ProductModal
                   labelText: index == 0 ? 'Name (default)' : 'Name',
                   hintText: 'e.g. Regular, Half Plate',
                 ),
-                validator: Validator.textLimit('Variant Name', 30),
+                validator: Validator.textLimit('Variant Name', 30, validator: _validateVariantName),
               ),
             ),
             const SizedBox(width: 8),

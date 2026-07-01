@@ -490,6 +490,7 @@
   "transitFormatFieldOrderProductTitle": "Order Product Details",
   "transitFormatFieldOrderProductHeaderNo": "No.",
   "transitFormatFieldOrderProductHeaderName": "Product",
+  "transitFormatFieldOrderProductHeaderVariant": "Variant",
   "transitFormatFieldOrderProductHeaderCatalog": "Category",
   "transitFormatFieldOrderProductHeaderCount": "Quantity",
   "transitFormatFieldOrderProductHeaderPrice": "Single Price",
@@ -573,6 +574,10 @@
         "type": "String"
       }
     }
+  },
+  "transitFormatTextMenuVariants": "This product has variants",
+  "@transitFormatTextMenuVariants": {
+    "description": "Prefix of the plain-text line listing a product's price/size variants, so regex can detect it during import"
   },
   "transitFormatTextMenuIngredient": "{amount} of {name} and {details}",
   "@transitFormatTextMenuIngredient": {
