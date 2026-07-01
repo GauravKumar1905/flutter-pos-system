@@ -45,6 +45,15 @@ class Cart extends ChangeNotifier {
   /// Note for the order.
   String note = '';
 
+  /// Open-order ticket number of the order currently being edited.
+  ///
+  /// 0 means "not yet numbered" (e.g. a brand-new empty order). Assigned via
+  /// [ensureOpen] / [startNewOrder] and carried into the stash on save.
+  int no = 0;
+
+  /// Optional human label (car / customer name) for the current order.
+  String label = '';
+
   /// Current selected product index.
   int selectedIndex = -1;
 
@@ -103,6 +112,10 @@ class Cart extends ChangeNotifier {
     products.add(p);
 
     toggleAll(false, except: p);
+
+    // Lazily assign a ticket number the moment an order gains its first item
+    // (also covers the next order started right after a checkout).
+    if (no == 0) ensureOpen();
 
     notifyListeners();
   }
@@ -194,8 +207,62 @@ class Cart extends ChangeNotifier {
     attributes
       ..clear()
       ..addAll(order.selectedAttributes);
+    note = order.note;
+    no = order.no;
+    label = order.label;
     selectedProduct.value = null;
 
+    notifyListeners();
+  }
+
+  bool _numbering = false;
+
+  /// Ensure the current order has a ticket number.
+  ///
+  /// Called when entering the order screen so the active order always shows a
+  /// number. No-op if it already has one or is currently being numbered.
+  Future<void> ensureOpen() async {
+    if (no != 0 || _numbering) return;
+
+    _numbering = true;
+    try {
+      no = await StashedOrders.instance.nextNo();
+    } finally {
+      _numbering = false;
+    }
+    notifyListeners();
+  }
+
+  /// Start a brand-new open order, silently saving the current one first.
+  ///
+  /// The current order (if it has products) is stashed as an open order so it
+  /// can be resumed later; then the cart is reset and given a fresh number.
+  Future<void> startNewOrder() async {
+    if (!isEmpty) {
+      await StashedOrders.instance.stash(toObject());
+    }
+
+    clear();
+    no = await StashedOrders.instance.nextNo();
+    notifyListeners();
+  }
+
+  /// Switch the active order to a previously stashed [order].
+  ///
+  /// The current order is silently stashed (if not empty), then [order] is
+  /// loaded and removed from the stash since it is now active.
+  Future<void> switchTo(OrderObject order) async {
+    if (!isEmpty) {
+      await StashedOrders.instance.stash(toObject());
+    }
+
+    restore(order);
+    await StashedOrders.instance.delete(order.id ?? 0);
+  }
+
+  /// Set the human label of the current order.
+  void setLabel(String value) {
+    label = value;
     notifyListeners();
   }
 
@@ -287,6 +354,8 @@ class Cart extends ChangeNotifier {
     attributes.clear();
     selectedProduct.value = null;
     note = '';
+    no = 0;
+    label = '';
 
     notifyListeners();
   }
@@ -315,6 +384,8 @@ class Cart extends ChangeNotifier {
   /// Cart status to [OrderObject]
   OrderObject toObject({num paid = 0}) {
     return OrderObject(
+      no: no,
+      label: label,
       paid: paid,
       cost: productsCost,
       price: price,

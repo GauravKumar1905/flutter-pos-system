@@ -29,6 +29,7 @@ import 'package:possystem/ui/order/order_page.dart';
 import 'package:provider/provider.dart';
 
 import '../../mocks/mock_cache.dart';
+import '../../mocks/mock_database.dart';
 import '../../mocks/mock_storage.dart';
 import '../../test_helpers/breakpoint_mocker.dart';
 import '../../test_helpers/translator.dart';
@@ -525,6 +526,7 @@ void main() {
     setUpAll(() {
       initializeCache();
       initializeStorage();
+      initializeDatabase();
       initializeTranslator();
     });
   });

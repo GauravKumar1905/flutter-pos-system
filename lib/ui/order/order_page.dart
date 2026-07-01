@@ -9,6 +9,7 @@ import 'package:possystem/components/tutorial.dart';
 import 'package:possystem/helpers/breakpoint.dart';
 import 'package:possystem/models/repository/cart.dart';
 import 'package:possystem/models/repository/menu.dart';
+import 'package:possystem/models/repository/stashed_orders.dart';
 import 'package:possystem/routes.dart';
 import 'package:possystem/settings/checkout_warning.dart';
 import 'package:possystem/settings/order_awakening_setting.dart';
@@ -21,6 +22,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'cart/cart_product_state_selector.dart';
 import 'widgets/draggable_sheet_view.dart';
+import 'widgets/open_order_list_view.dart';
 import 'widgets/order_catalog_list_view.dart';
 import 'widgets/order_product_list_view.dart';
 import 'widgets/orientated_view.dart';
@@ -92,6 +94,16 @@ class _OrderPageState extends State<OrderPage> {
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
           leading: const PopButton(),
+          title: ListenableBuilder(
+            listenable: Cart.instance,
+            builder: (context, _) {
+              final c = Cart.instance;
+              final text = c.no == 0
+                  ? 'New order'
+                  : (c.label.isEmpty ? 'Order #${c.no}' : 'Order #${c.no} · ${c.label}');
+              return Text(text, style: Theme.of(context).textTheme.titleMedium);
+            },
+          ),
           actions: [
             MoreButton(key: const Key('order.more'), onPressed: _showActions),
             const PrinterButtonView(),
@@ -103,6 +115,38 @@ class _OrderPageState extends State<OrderPage> {
           ],
         ),
         body: body,
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ListenableBuilder(
+                    listenable: StashedOrders.instance,
+                    builder: (context, _) => OutlinedButton.icon(
+                      key: const Key('order.open_orders'),
+                      icon: const Icon(Icons.receipt_long_outlined),
+                      label: FutureBuilder<StashedOrderMetrics>(
+                        future: StashedOrders.instance.getMetrics(),
+                        builder: (context, snap) => Text('Open orders (${snap.data?.count ?? 0})'),
+                      ),
+                      onPressed: _handleOpenOrders,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    key: const Key('order.new_order'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('New order'),
+                    onPressed: _handleNewOrder,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -122,6 +166,8 @@ class _OrderPageState extends State<OrderPage> {
     WakelockPlus.toggle(enable: OrderAwakeningSetting.instance.value);
     // rebind menu/attributes if changed
     Cart.instance.rebind();
+    // ensure the active order has a ticket number to display
+    Cart.instance.ensureOpen();
 
     _pageController = PageController();
     _catalogIndexNotifier = ValueNotifier<int>(0);
@@ -174,6 +220,29 @@ class _OrderPageState extends State<OrderPage> {
   Future<bool?> _handleStash() {
     DraggableScrollableActuator.reset(context);
     return Cart.instance.stash();
+  }
+
+  void _handleNewOrder() async {
+    await Cart.instance.startNewOrder();
+    if (!mounted) return;
+    _resetNotifier.notify();
+    await editOrderLabel(context, Cart.instance.no, Cart.instance.label, (v) => Cart.instance.setLabel(v));
+  }
+
+  void _handleOpenOrders() async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const OpenOrderListView(),
+    );
+    if (!mounted) return;
+
+    _resetNotifier.notify();
+    if (result == 'checkout') {
+      _handleCheckout();
+    } else if (result == 'new') {
+      await editOrderLabel(context, Cart.instance.no, Cart.instance.label, (v) => Cart.instance.setLabel(v));
+    }
   }
 }
 

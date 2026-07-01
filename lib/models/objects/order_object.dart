@@ -16,6 +16,14 @@ class OrderObject extends _Object {
   /// ID of database row
   final int? id;
 
+  /// Open-order ticket number (resets daily, not reused same day).
+  ///
+  /// Only meaningful for open/stashed orders; 0 when not applicable.
+  final int no;
+
+  /// Optional human label for an open order, e.g. a car or customer name.
+  final String label;
+
   /// Periodic sequence, number of each order and may reset periodically.
   final int? periodSeq;
 
@@ -49,6 +57,8 @@ class OrderObject extends _Object {
   /// Should not use the default value which only for help on test.
   const OrderObject({
     this.id,
+    this.no = 0,
+    this.label = '',
     this.periodSeq = 0,
     this.paid = 0,
     this.cost = 0,
@@ -132,6 +142,8 @@ class OrderObject extends _Object {
   @override
   Map<String, Object?> toStashMap() {
     return {
+      'no': no,
+      'label': label,
       'note': note,
       'encodedProducts': jsonEncode(products.map((e) => e.toStashMap()).toList()),
       'encodedAttributes': jsonEncode(attributes.map((e) => e.toStashMap()).toList()),
@@ -169,6 +181,8 @@ class OrderObject extends _Object {
 
     return OrderObject(
       id: data['id'] as int?,
+      no: data['no'] as int? ?? 0,
+      label: data['label'] as String? ?? '',
       note: data['note'] as String? ?? '',
       attributes: attributes.map((e) => OrderSelectedAttributeObject.fromStashMap(e)).toList(),
       products: products.map((e) => OrderProductObject.fromStashMap(e)).toList(),
